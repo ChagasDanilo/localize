@@ -14,6 +14,8 @@ import { Button,
     Title
 } from 'react-native-paper';
 
+import api from '../services/api';
+
 const app = ({ navigation, route }) => {
   
     const [vaga, setVaga] = useState('');
@@ -34,6 +36,54 @@ const app = ({ navigation, route }) => {
             setVazio(false)
             return true
         }        
+    }
+
+    function RemoveCaracteresEspec(texto){
+        var er = /[^0-9,]/gi;
+        var er2 = /[^0-9]/gi;
+        texto = texto.replace(er, "");
+        texto = texto.replace(er2, ".");
+        return texto == '' ? '0' : texto;
+    }
+
+    async function handleSubmit (){        
+        if(validaCampos()){
+            setCarregando(true);
+            try {
+                const data = {                    
+                    vaga : vaga,
+                    empresa: empresa == '' ? ' ' : empresa,
+                    vinculo: vinculo,
+                    valor: RemoveCaracteresEspec(salario),
+                    requisitos: detalhes,
+                    contato_email: email,
+                    contato_telefone: celular
+                }
+                const response = await api.post('/vagaEmpregoStore', data);
+                // sendNotificacao(`Nova Vaga de Emprego`, vaga);
+                setCarregando(false);
+                Alert.alert('Sucesso','Vaga cadastrada com sucesso!')
+                navigation.goBack();
+            } catch (error) {
+                setCarregando(false);
+                Alert.alert('Alerta','Não foi possível finalizar o cadastro. Verifique os dados e tente novamente. ' + error)
+            }
+        } else {
+            setCarregando(false);
+            Alert.alert('Alerta', 'Há campo obrigatório não informado!');            
+        }
+    }
+
+    async function sendNotificacao( _title, _body ) {
+        try{
+            const data = {
+                titulo: _title,
+                conteudo: _body,
+            }
+            const response = await api.post('/pushTokenSend', data);
+        } catch(err){
+            console.log('Alerta', err);
+        }
     }
 
     return (        
@@ -61,15 +111,15 @@ const app = ({ navigation, route }) => {
 
                     type="flat"
                     mode="outlined"
-                    selectionColor="#009750"
-                    underlineColor="#009750"
                       error={vazio && !vaga}
                     //icon="login"
+                    tselectionColor="#345D7E"
+                    underlineColor="#345D7E"
                     theme={{ 
                         colors: { 
                             placeholder: '#828282',
                             text: '#333333',
-                            primary: '#009750',
+                            primary: '#345D7E',
                             underlineColor:'transparent',
                             background : '#fff'
                         }
@@ -89,15 +139,14 @@ const app = ({ navigation, route }) => {
 
                     type="flat"
                     mode="outlined"
-                    selectionColor="#009750"
-                    underlineColor="#009750"
-                      error={vazio && !detalhes}
-                    //icon="login"
+                    error={vazio && !detalhes}
+                    selectionColor="#345D7E"
+                    underlineColor="#345D7E"
                     theme={{ 
                         colors: { 
                             placeholder: '#828282',
                             text: '#333333',
-                            primary: '#009750',
+                            primary: '#345D7E',
                             underlineColor:'transparent',
                             background : '#fff'
                         }
@@ -116,15 +165,13 @@ const app = ({ navigation, route }) => {
 
                     type="flat"
                     mode="outlined"
-                    selectionColor="#009750"
-                    underlineColor="#009750"
-                    //   error={vazio && !cidade}
-                    //icon="login"
+                    selectionColor="#345D7E"
+                    underlineColor="#345D7E"
                     theme={{ 
                         colors: { 
                             placeholder: '#828282',
                             text: '#333333',
-                            primary: '#009750',
+                            primary: '#345D7E',
                             underlineColor:'transparent',
                             background : '#fff'
                         }
@@ -140,15 +187,13 @@ const app = ({ navigation, route }) => {
 
                     type="flat"
                     mode="outlined"
-                    selectionColor="#009750"
-                    underlineColor="#009750"
-                    //   error={vazio && !cidade}
-                    //icon="login"
+                    selectionColor="#345D7E"
+                    underlineColor="#345D7E"
                     theme={{ 
                         colors: { 
                             placeholder: '#828282',
                             text: '#333333',
-                            primary: '#009750',
+                            primary: '#345D7E',
                             underlineColor:'transparent',
                             background : '#fff'
                         }
@@ -157,7 +202,7 @@ const app = ({ navigation, route }) => {
                 />
                 <TextInput
                     label= {'Salário'}
-                    placeholder={'Ex: 1.045'}
+                    placeholder={'Ex: 2.000'}
                     secureTextEntry={false}
                     autoCapitalize='words'
                     autoCorrect={true}
@@ -167,15 +212,13 @@ const app = ({ navigation, route }) => {
 
                     type="flat"
                     mode="outlined"
-                    selectionColor="#009750"
-                    underlineColor="#009750"
-                    // error={vazio && !celula}
-                    //icon="login"
+                    selectionColor="#345D7E"
+                    underlineColor="#345D7E"
                     theme={{ 
                         colors: { 
                             placeholder: '#828282',
                             text: '#333333',
-                            primary: '#009750',
+                            primary: '#345D7E',
                             underlineColor:'transparent',
                             background : '#fff'
                         }
@@ -207,15 +250,13 @@ const app = ({ navigation, route }) => {
 
                     type="flat"
                     mode="outlined"
-                    selectionColor="#009750"
-                    underlineColor="#009750"
-                    // error={vazio && !email}
-                    //icon="login"
+                    selectionColor="#345D7E"
+                    underlineColor="#345D7E"
                     theme={{ 
                         colors: { 
                             placeholder: '#828282',
                             text: '#333333',
-                            primary: '#009750',
+                            primary: '#345D7E',
                             underlineColor:'transparent',
                             background : '#fff'
                         }
@@ -234,15 +275,13 @@ const app = ({ navigation, route }) => {
 
                     type="flat"
                     mode="outlined"
-                    selectionColor="#009750"
-                    underlineColor="#009750"
-                    // error={vazio && !celular}
-                    //icon="login"
+                    selectionColor="#345D7E"
+                    underlineColor="#345D7E"
                     theme={{ 
                         colors: { 
                             placeholder: '#828282',
                             text: '#333333',
-                            primary: '#009750',
+                            primary: '#345D7E',
                             underlineColor:'transparent',
                             background : '#fff'
                         }
@@ -277,7 +316,7 @@ const app = ({ navigation, route }) => {
                     style={{
                         marginTop: 20,
                     }}
-                    onPress={() => validaCampos()}
+                    onPress={() => handleSubmit()}
                 >
                     Confirmar
                 </Button>

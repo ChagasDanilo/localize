@@ -13,25 +13,22 @@ import { Title,
     Subheading,
     Text,
     Searchbar,
-    Appbar, } from 'react-native-paper';
+    Appbar,
+    Headline,
+    Button
+} from 'react-native-paper';
 import Constants from 'expo-constants';
+
+import api from '../services/api';
 
 const App = ({ navigation, route }) => {
 
-    const [lista , setLista ] = useState([
-        {
-            id: 1,
-            vaga: "Desenvolvedor",
-            empresa: 'Desenvolve Tech',
-            vinculo: 'CLT',
-            salario: '2000.00',
-            requisito: 'Resuisitos da vaga',
-            email: 'danilochagas009@gmail.com',
-            telefone: '(62) 99228-7402'
-        },
-    ]);
+    const [lista , setLista ] = useState([]);
     const [pesquisa, setPesquisa] = useState('');
     const [refreshing, setRefreshing] = useState(false);
+
+    const [titulo, setTitulo] = useState('Carregando...');
+    const [mensagem, setMensagem] = useState('Favor, aguarde enquanto processamos os dados!');
 
     const window = Dimensions.get("window");
     const screen = Dimensions.get("screen");
@@ -48,6 +45,147 @@ const App = ({ navigation, route }) => {
         Dimensions.removeEventListener("change", onChange);
         };
     });
+
+    useEffect(()=>{
+        const handelGetData  = async () =>{
+          try{
+            const response = await api.get('/vagaEmpregoShow');
+
+            setLista(response.data);
+            if(response.data.length <= 0){
+              setTitulo('Ops')
+              setMensagem('Nenhum registro encontrado')
+            }
+          }catch(err){
+            setTitulo('Sem conexão')
+            setMensagem('Verifique sua conexão com a internet')
+          }
+        }
+        handelGetData();
+      },[]) 
+      
+      async function refresh (){
+        if(pesquisa != ''){
+          consultar();
+        }else{
+          setRefreshing(true);
+          try{
+            const response = await api.get('/vagaEmpregoShow');
+            
+            setLista(response.data);
+            if(response.data.length <= 0){
+              setTitulo('Ops')
+              setMensagem('Nenhum registro encontrado')
+            }
+          }catch(err){
+            setTitulo('Sem conexão')
+            setMensagem('Verifique sua conexão com a internet')
+          }
+          setTimeout(() =>{
+            setRefreshing(false)
+          },1000);
+        }
+        //setRefreshing(false)
+      }
+      
+      function retornaValor(valor){
+        var vlr;
+        var er2 = /[^0-9]/gi;
+        vlr = valor.replace(er2, ",");
+            
+        return 'R$ ' + vlr.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+      }
+      function RemoveCaracteresEspec(texto){
+        var er = /[^a-z0-9]/gi;
+        texto = texto.replace(er, "");
+        return texto;
+      }
+      
+      async function consultar(){
+        try{
+          setRefreshing(true);
+          const response = await api.get('/vagaEmpregoLike?texto='+pesquisa);
+              
+          setLista(response.data);
+          setRefreshing(false);
+          if(response.data.length <= 0){
+            setRefreshing(false);
+            setTitulo('Ops')
+            setMensagem('Nenhum registro encontrado')
+          }
+        }catch(err){
+          setRefreshing(false);
+          setTitulo('Sem conexão')
+          setMensagem('Verifique sua conexão com a internet')
+        }    
+      }
+
+      const emptyRender = () => (      
+        <View
+          style={{
+            backgroundColor: 'transparent',
+            margin: 18,
+            marginTop: 13,
+            marginBottom: 0,
+            borderRadius: 3,
+            padding: 5,
+            borderColor: '#009750',
+            borderWidth: 1,
+            borderEndWidth: 6,
+            borderStartWidth: 6,
+          }}
+        >
+            <Subheading style={{
+                backgroundColor: 'transparent',
+                textAlignVertical: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
+                fontWeight: 'bold',
+            }}>
+              {titulo}
+            </Subheading>
+            <Headline style={{
+                alignSelf: 'center',
+                textAlign: 'center',
+                backgroundColor: 'transparent',
+                fontWeight: 'bold',
+                paddingStart: 10,
+                marginTop : 5,
+            }}>
+                {mensagem}
+            </Headline>
+            <Button 
+              icon="reload" 
+              mode="contained"
+              color='#fff'
+              // loading={carregando}
+              uppercase={false}
+              accessibilityLabel="Recarregar"
+              contentStyle={{
+                  height: 40,
+                  justifyContent: 'center',
+                  alignContent: 'stretch',
+                  fontWeight: 'bold',
+              }}
+              style={{
+                  marginTop: 5,
+                  marginStart: 20,
+                  marginEnd: 20,
+                  borderWidth: 1,
+                  borderColor: '#009750'
+              }}
+              labelStyle={{
+                color: '#009750'
+              }}
+              onPress={() => refresh()}
+            >
+              Recarregar
+            </Button>
+            <View style={{
+              paddingBottom: 8,
+            }}/>
+        </View>
+      );
 
     return (
         <View style={{
@@ -73,12 +211,12 @@ const App = ({ navigation, route }) => {
             </Appbar.Header>
 
           <Searchbar
-            placeholder="Pesquisar"
+            placeholder="Pesquise palavras chaves"
             value={pesquisa}
             autoCorrect={false}
             onChangeText={text => setPesquisa(text)}
-            // onSubmitEditing={() => refresh()}
-            // onIconPress={() => refresh()}
+            onSubmitEditing={() => refresh()}
+            onIconPress={() => refresh()}
             style={{
                 width: (Dimensions.get("window").width - 20),
                 alignSelf:'center',
@@ -90,12 +228,12 @@ const App = ({ navigation, route }) => {
                 <RefreshControl 
                   colors={['#345D7E']} 
                   tintColor='#345D7E' 
-                //   refreshing={refreshing} 
-                //   onRefresh={refresh}
+                  refreshing={refreshing} 
+                  onRefresh={refresh}
                   progressBackgroundColor='transparent' />
             }        
                 data={lista}
-                // ListEmptyComponent={emptyRender}
+                ListEmptyComponent={emptyRender}
                 style={{height: 100}}
                 renderItem={({item}) =>
                   <View style={{
@@ -174,7 +312,7 @@ const App = ({ navigation, route }) => {
                             Salário:
                         </Subheading>
                         ): null}
-                        {item.salario > 0 ? (
+                        {item.valor > 0 ? (
                         <Subheading style={{
                             alignSelf: 'flex-start',
                             textAlign: 'left',
@@ -182,9 +320,10 @@ const App = ({ navigation, route }) => {
                             paddingStart: 15,
                             marginBottom: 10,
                         }}>                  
-                          R$ {item.salario}
+                          {retornaValor(item.valor)}
                         </Subheading>   
                         ): null}
+                        {item.requisitos ? (
                         <Subheading style={{
                             alignSelf: 'flex-start',
                             textAlign: 'left',
@@ -193,6 +332,8 @@ const App = ({ navigation, route }) => {
                         }}>                  
                             Requisitos:
                         </Subheading>
+                        ): null}
+                        {item.requisitos ? (
                         <Subheading style={{
                             alignSelf: 'flex-start',
                             textAlign: 'left',
@@ -200,8 +341,9 @@ const App = ({ navigation, route }) => {
                             paddingStart: 15,
                             marginBottom: 10,
                         }}>                  
-                            {item.requisito}
+                            {item.requisitos}
                         </Subheading>
+                        ): null}
                         {item.email ? (
                         <Subheading style={{
                             alignSelf: 'flex-start',
@@ -212,7 +354,7 @@ const App = ({ navigation, route }) => {
                             Email:
                         </Subheading>
                         ): null}
-                        {item.email ? (
+                        {item.contato_email ? (
                           <TouchableOpacity 
                           onPress={() => Linking.openURL('mailto:'//+item.email
                             + 'danilochagas009@gmail.com?subject=Currículo enviado a partir do APP&body=Adicionar anexo do currículo')}>
@@ -238,16 +380,15 @@ const App = ({ navigation, route }) => {
                                     justifyContent: 'center',
                                     textAlign: 'justify',
                                 }}>
-                                {item.email}
+                                {item.contato_email}
                                 email
                               </Subheading>
                             </View>
                           </TouchableOpacity>
                         ): null}
-                        {item.telefone ? (
+                        {item.contato_telefone ? (
                           <TouchableOpacity 
-                            // onPress={() => Linking.openURL('tel:'+RemoveCaracteresEspec(item.telefone))}>
-                            onPress={() => Linking.openURL('tel:992287402')}>
+                            onPress={() => Linking.openURL('tel:'+RemoveCaracteresEspec(item.contato_telefone))}>
                             <View style={{
                                 flexDirection: 'row',
                                 alignItems: 'center',
@@ -271,7 +412,7 @@ const App = ({ navigation, route }) => {
                                     justifyContent: 'center',
                                     textAlign: 'justify',}}
                                 >
-                                    {item.telefone}                     
+                                    {item.contato_telefone}                     
                                 </Subheading>
                             </View>
                           </TouchableOpacity>

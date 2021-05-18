@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View,
     KeyboardAvoidingView,    
     Alert,
     ScrollView,
     Image,
+    FlatList,
+    Dimensions,
+    Pressable,
 } from 'react-native';
 import { TextInputMask } from 'react-native-masked-text'
 import { Button,
@@ -13,25 +16,54 @@ import { Button,
     FAB,
     Appbar,
     Title,
-    Text
+    Text,
 } from 'react-native-paper';
+import {Picker} from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
+import { SliderBox } from "react-native-image-slider-box";
+import Slideshow from 'react-native-image-slider-show';
+import Gallery from 'react-native-image-gallery';
+
 import * as ImageManipulator from 'expo-image-manipulator';
 import {ImageBrowser} from 'expo-image-picker-multiple';
 import { AssetsSelector } from 'expo-images-picker'
 import { Ionicons } from '@expo/vector-icons'
 
+import api from '../services/api';
+
 const app = ({ navigation, route }) => {
+
+    const window = Dimensions.get("window");
+    const screen = Dimensions.get("screen");
+
+    const [dimensions, setDimensions] = useState({ window, screen });
+
+    const onChange = ({ window, screen }) => {
+        setDimensions({ window, screen });
+    };
+
+    useEffect(() => {
+        Dimensions.addEventListener("change", onChange);
+        return () => {
+        Dimensions.removeEventListener("change", onChange);
+        };
+    });
   
     const [servico, setServico] = useState('');
-    const [descricao, setDescricao] = useState('');
+    const [detalhes, setDetalhes] = useState('')
     const [valor, setValor] = useState('');
-    const [imagens, setImagens] = useState([]);
+    const [unidade_medida, setUnidadeMedida] = useState('')
+    const [palavra_chave, setPalavraChave] = useState('')
+
+    const [categoria, setCategoria] = useState(null);
+    const [categorias, setCategorias] = useState([]);
 
     const [carregando, setCarregando] = React.useState(false);
     const [vazio, setVazio] = React.useState(false);
 
     const [image, setImage] = useState(null);
+    const [imagens, setImagens] = useState([]);
+    const [imageAlterou, setImageAlterou] = useState(false);
 
     useEffect(() => {
         (async () => {
@@ -44,30 +76,125 @@ const app = ({ navigation, route }) => {
         })();
     }, []);
 
+    useEffect(() =>{
+        const getCategorias  = async () =>{
+          try {
+            
+            const response = await api.get('/servicoCategoriaShow');
+            if (response.data){
+                setCategorias(response.data);
+            }
+          } catch (error) {
+            Alert.alert('Alerta', 'Não foi possível carregar a lista de categorias.');
+          }            
+        }
+    
+        getCategorias();
+    },[]) 
+
     const pickImage = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ImagePicker.MediaTypeOptions.All,
           allowsEditing: false,
         //   aspect: [4, 3],
           quality: 1,
-          allowsMultipleSelection: true
         });
-    
-        console.log(result);
     
         if (!result.cancelled) {
           setImage(result.uri);
+          adicionaLista(result.uri)
+          setImageAlterou(!imageAlterou)
         }
       };
 
+    async function adicionaLista (uri_local){
+        let dataHora = new Date().getDate() + '-' + new Date().getMonth() + 1 + '-' + new Date().getFullYear() 
+            + '-' + new Date().getHours() + '-' + new Date().getMinutes() + '-' + new Date().getSeconds();
+
+        let uriParts = uri_local.split('.');
+        let fileType = uriParts[uriParts.length - 1];  
+        let name = 'servico-' + dataHora + '.' + fileType
+        let clientName = `servico-` + dataHora + '.' + fileType
+        let type =  'image/' + fileType
+        let uri = Platform.OS === "android" ? uri_local : uri_local.replace("file://", "")
+
+        var lista2 = 
+            {
+                id: (imagens.length > 0 ? imagens[imagens.length - 1].id + 1 : imagens.length + 1).toString(),
+                uri_local: uri_local,
+                name: name,
+                clientName: clientName,
+                type: type,
+                uri: uri
+            }
+        imagens.push(lista2);
+    }
+
+    async function removeLista(cod){
+        var novaLista = imagens.filter((item) => item.id !== cod)
+        setImagens(novaLista)
+        setImageAlterou(!imageAlterou)
+    }
+
+    const createTwoButtonAlert = (cod) =>
+    Alert.alert(
+      "Remover imagem",
+      "Tem certeza que deseja remover essa imagem?",
+      [
+        {
+          text: "Cancelar",
+          onPress: () => console.log("Cancel Pressed"),
+          style: "cancel"
+        },
+        { text: "Confirmar", onPress: () => removeLista(cod) }
+      ]
+    );
+
     function validaCampos(){        
-        if(servico == '' || descricao == ''){
+        if(servico == '' || detalhes == ''){
             setVazio(true)
             return false
         } else {
             setVazio(false)
             return true
         }        
+    }
+
+    function RemoveCaracteresEspec(texto){
+        var er = /[^a-z0-9]/gi;
+        texto = texto.replace(er, "");
+        return texto;
+      }
+
+    async function handleSubmit (){        
+        if(validaCampos()){
+            setCarregando(true);
+            try {                
+                const data = new FormData();
+                data.append('servico_categoria_id', categoria);
+                data.append('descricao', servico);
+                data.append('detalhes', detalhes);
+                data.append('valor', RemoveCaracteresEspec(valor));
+                data.append('unidade_medida', unidade_medida);
+                data.append('palavra_chave', palavra_chave);
+                console.log(imagens);
+                data.append('imagens_path', imagens);
+                imagens.forEach((item, i) => {
+                    data.append("imagens[]", item);
+                });
+                  
+                const response = await api.post('/servicoStore', data);
+                setCarregando(false);
+                // Alert.alert('Sucesso','Serviço cadastrado com sucesso!')
+                // navigation.goBack();
+            } catch (error) {
+                setCarregando(false);
+                Alert.alert('Alerta','Não foi possível finalizar o cadastro. Verifique os dados e tente novamente. ' + error)
+            }
+        } else {
+            setCarregando(false);
+            Alert.alert('Alerta', 'Há campo obrigatório não informado!');            
+        }
     }
       
     return (        
@@ -85,7 +212,45 @@ const app = ({ navigation, route }) => {
             </Appbar.Header>
 
             <ScrollView style={{backgroundColor: '#fff', paddingStart: 15, paddingEnd: 15, height: '100%'}}>
-              <Button 
+            <FlatList
+                data={imagens}
+                extraData={imageAlterou}
+                style={{height: dimensions.window.height / 3, marginTop: 10}}
+                horizontal={true}
+                renderItem={({item}) =>
+                  <View style={{
+                    backgroundColor: 'transparent',
+                    alignSelf: 'center',
+                    alignItems: 'center',
+                    alignContent: 'center'
+                  }}>
+                    <Pressable
+                        onLongPress={() => {
+                            console.log('pressionou');
+                            createTwoButtonAlert(item.id)
+                        }}>
+                    <Image
+                        key={item.id}
+                        style={{
+                        alignSelf: 'stretch',
+                        height: dimensions.window.height / 3,
+                        width: dimensions.window.width / 2,
+                        margin: 15,
+                        justifyContent: 'center',
+                        resizeMode: "contain",
+                        }}
+                        source={{uri: item.uri_local}}
+                    />
+                    </Pressable>
+                  </View>
+              }
+                keyExtractor={item => item.id.toString()} 
+                numColumns={1}
+            />
+            <HelperText type="info" visible={imagens.length > 0} style={{alignSelf: 'flex-end'}}>
+                Para deletar pressione a imagem por alguns segundos
+            </HelperText>
+            <Button 
                 icon="new-box"
                 mode="outlined"
                 color="#345D7E"
@@ -108,7 +273,39 @@ const app = ({ navigation, route }) => {
               >
               Inserir imagem
             </Button>
-            {image && <Image source={{ uri: image }} style={{ width: 200, height: 200}} />}
+
+            <TextInput
+                label= {'Categoria do Serviço'}
+                onChangeText={text => setCategoria(text)}
+                value={categoria}
+
+                type="flat"
+                mode="outlined"
+                selectionColor="#009750"
+                underlineColor="#009750"
+                  error={vazio && !categoria}
+                //icon="login"
+                theme={{ 
+                    colors: { 
+                        placeholder: '#828282',
+                        text: '#333333',
+                        primary: '#009750',
+                        underlineColor:'transparent',
+                        background : '#fff'
+                    }
+                }}
+                style={{paddingTop: 10}}
+                render={
+                    props =>
+                    <Picker
+                        onValueChange={destino => setCategoria(destino)}
+                        selectedValue={categoria}                                  
+                    >
+                    <Picker.Item label='Selecione a categoria' value=''/>
+                        {categorias.map(dest =><Picker.Item key={dest.id} label={dest.descricao} value={dest.id}/>)}
+                    </Picker>
+                }
+            />
 
                 <TextInput
                     label= {'Título do Serviço'}
@@ -120,15 +317,14 @@ const app = ({ navigation, route }) => {
 
                     type="flat"
                     mode="outlined"
-                    selectionColor="#009750"
-                    underlineColor="#009750"
-                      error={vazio && !servico}
-                    //icon="login"
+                    error={vazio && !servico}
+                    selectionColor="#345D7E"
+                    underlineColor="#345D7E"
                     theme={{ 
                         colors: { 
                             placeholder: '#828282',
                             text: '#333333',
-                            primary: '#009750',
+                            primary: '#345D7E',
                             underlineColor:'transparent',
                             background : '#fff'
                         }
@@ -143,26 +339,25 @@ const app = ({ navigation, route }) => {
                     placeholder={'Pintura residencial'}
                     autoCapitalize='sentences'
                     autoCorrect={true}
-                    onChangeText={text => setDescricao(text)}
-                    value={descricao}
+                    onChangeText={text => setDetalhes(text)}
+                    value={detalhes}
 
                     type="flat"
                     mode="outlined"
-                    selectionColor="#009750"
-                    underlineColor="#009750"
-                      error={vazio && !descricao}
-                    //icon="login"
+                    error={vazio && !detalhes}
+                    selectionColor="#345D7E"
+                    underlineColor="#345D7E"
                     theme={{ 
                         colors: { 
                             placeholder: '#828282',
                             text: '#333333',
-                            primary: '#009750',
+                            primary: '#345D7E',
                             underlineColor:'transparent',
                             background : '#fff'
                         }
                     }}
                 />
-                <HelperText type="info" visible={!descricao}>
+                <HelperText type="info" visible={!detalhes}>
                     Campo obrigatório!
                 </HelperText>
                 <TextInput
@@ -177,15 +372,13 @@ const app = ({ navigation, route }) => {
 
                     type="flat"
                     mode="outlined"
-                    selectionColor="#009750"
-                    underlineColor="#009750"
-                    // error={vazio && !celula}
-                    //icon="login"
+                    selectionColor="#345D7E"
+                    underlineColor="#345D7E"
                     theme={{ 
                         colors: { 
                             placeholder: '#828282',
                             text: '#333333',
-                            primary: '#009750',
+                            primary: '#345D7E',
                             underlineColor:'transparent',
                             background : '#fff'
                         }
@@ -204,6 +397,61 @@ const app = ({ navigation, route }) => {
                     />
                     }
                 />
+                <TextInput
+                    label= {'Unidade de Medida'}
+                    placeholder={'Metros quadrados'}
+                    autoCapitalize='sentences'
+                    autoCorrect={true}
+                    onChangeText={text => setUnidadeMedida(text)}
+                    value={unidade_medida}
+
+                    type="flat"
+                    mode="outlined"
+                    // error={vazio && !unidade_medida}
+                    selectionColor="#345D7E"
+                    underlineColor="#345D7E"
+                    theme={{ 
+                        colors: { 
+                            placeholder: '#828282',
+                            text: '#333333',
+                            primary: '#345D7E',
+                            underlineColor:'transparent',
+                            background : '#fff'
+                        }
+                    }}
+                    style={{
+                        marginTop: 10,
+                    }}
+                />
+                <TextInput
+                    label= {'Palavras Chaves'}
+                    placeholder={'Palavras que lembrem o serviço prestado'}
+                    autoCapitalize='sentences'
+                    autoCorrect={true}
+                    onChangeText={text => setPalavraChave(text)}
+                    value={palavra_chave}
+
+                    type="flat"
+                    mode="outlined"
+                    error={vazio && !palavra_chave}
+                    selectionColor="#345D7E"
+                    underlineColor="#345D7E"
+                    theme={{ 
+                        colors: { 
+                            placeholder: '#828282',
+                            text: '#333333',
+                            primary: '#345D7E',
+                            underlineColor:'transparent',
+                            background : '#fff'
+                        }
+                    }}
+                    style={{
+                        marginTop: 10,
+                    }}
+                />
+                <HelperText type="info" visible={!palavra_chave}>
+                    Campo obrigatório!
+                </HelperText>
 
                 <Button 
                     icon="new-box"
@@ -221,7 +469,7 @@ const app = ({ navigation, route }) => {
                     style={{
                         marginTop: 20,
                     }}
-                    onPress={() => validaCampos()}
+                    onPress={() => handleSubmit()}
                 >
                     Confirmar
                 </Button>
@@ -229,7 +477,7 @@ const app = ({ navigation, route }) => {
                     Verifique os dados e tente novamente!
                 </HelperText>
 
-                <View style={{marginBottom: 10}}/>
+                <View style={{marginBottom: 100}}/>
             </ScrollView>
         </KeyboardAvoidingView>
 )

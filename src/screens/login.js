@@ -10,6 +10,8 @@ import Constants from 'expo-constants';
 import { Title, Button, TextInput, HelperText, } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 
+import api from '../services/api';
+
 const Login = ({ navigation }) => {
 
     const window = Dimensions.get("window");
@@ -37,6 +39,58 @@ const Login = ({ navigation }) => {
     const [errorS, setErrorS] = React.useState(false);
     const [error, setError] = React.useState(false);
     const [errorNet, setErrorNet] = React.useState(false);
+
+    async function handleSubmit (){
+        setErrorE(false)
+        setErrorS(false)
+        setError(false)
+        setErrorNet(false)
+
+        if(senha == '' || email == ''){
+            if(email == ''){
+                setErrorE(true)
+            }
+            if(senha == ''){
+                setErrorS(true)
+            }
+            return false;
+        }
+        else 
+        {
+            setCarregando(true);
+            try {
+                const data = {
+                    email : email,
+                    password: senha
+                }
+                const response = await api.post('/login',data);
+                console.log(response);
+                if (response.data.token){
+                    await AsyncStorage.setItem('@aciau-token', response.data.token);
+                    
+                    await AsyncStorage.setItem('@usermail', email);
+                    // gravaTokenUser()
+                    setCarregando(false);
+                    navigation.navigate('Perfil');
+                }else{
+                    setCarregando(false);
+                    setErrorE(true)
+                    setErrorS(true)
+                    //Alert.alert('Alerta','Verifique o email e senha e tente novamente!')
+                }
+            } catch (error) {
+                setCarregando(false);
+                if(error == `Error: Network Error`){
+                    setErrorNet(true)
+                    //Alert.alert(`Sem conexão`, `Verifique sua conexão com a internet`);
+                }else{
+                    setError(true)
+                    setErrorE(true)
+                    setErrorS(true)
+                }
+            }
+        }
+    }
     
     return (
     <View style={{
@@ -170,6 +224,7 @@ const Login = ({ navigation }) => {
                     alignContent: 'stretch',
                     fontWeight: 'bold',
                 }}
+                // onPress={() => handleSubmit()}
                 onPress={() => navigation.navigate('Perfil')}
             >
                 Login                
