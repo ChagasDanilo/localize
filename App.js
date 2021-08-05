@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View,
   Share,
   Image,
@@ -8,6 +8,7 @@ import { Title, } from 'react-native-paper';
 import Constants from 'expo-constants';
 import * as Linking from 'expo-linking'
 import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { NavigationContainer, DrawerActions } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -15,6 +16,7 @@ import { createDrawerNavigator } from '@react-navigation/drawer';
 
 import Menu from './src/screens/menu';
 import Login from './src/screens/login';
+import Login2 from './src/screens/login-2';
 import Perfil from './src/screens/perfil';
 
 import CartaoCadastro from './src/screens/cartaoCadastro';
@@ -28,10 +30,61 @@ import VagaEmpregoLista from './src/screens/vagaEmpregoLista';
 import Chat from './src/screens/chat';
 import ChatLista from './src/screens/chatLista';
 
+import api from './src/services/api';
+
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
 
 function App() {
+  useEffect(() => {
+    async function estaLogado(){
+      try{
+        setLogado(false)
+        const log = await AsyncStorage.getItem('@localize-token');
+        if(log){
+            const response = await api.get('/loginCheck');
+            console.log(response.data);
+            if(response.data){
+                setLogado(true)
+                // gravaTokenUser()
+                // navigation.navigate('Perfil')
+            }
+        }
+        return false
+      }catch(err){
+          console.log(err);
+          return false
+      }
+    }
+
+    estaLogado()
+  },[logado])
+  const [logado, setLogado] = React.useState(false);
+  async function temToken(){
+    try{
+      const log = await AsyncStorage.getItem('@localize-token');
+      if(log){
+        console.log('logado');
+        setLogado(true)
+      }else{
+        console.log('nao logado');
+        setLogado(false)
+      }
+    }catch(err){
+        console.log(err);
+        console.log('nao logado');
+        setLogado(false)
+    }
+  }
+  async function logout(){
+    try{
+        await AsyncStorage.removeItem('@localize-token');
+        
+    } catch(err){
+        console.log(`erro logout:` + err);
+    }
+  }
+
   async function onShare(){
     try {
       const result = await Share.share({
@@ -111,7 +164,7 @@ function App() {
                 width: `70%`,
                 backgroundColor: 'transparent',
               }}
-              source={require('./src/Images/logo.png')}
+              source={require('./src/Images/logo_completa.png')}
             />
         </View>
       </TouchableOpacity>
@@ -156,7 +209,11 @@ function App() {
         alignSelf: "center",
         width: "100%",
       }}/>
-      <TouchableOpacity onPress={() => navigation.navigate('Login') }>
+      <TouchableOpacity onPress={() => {
+          temToken()
+          console.log(logado);
+          logado ? navigation.navigate('Perfil') : navigation.navigate('Login')
+        }}>
         <View style={{
           flexDirection: 'row',
           alignItems: 'center',
@@ -276,7 +333,7 @@ function App() {
         alignSelf: "center",
         width: "100%",
       }}/>
-      <TouchableOpacity onPress={() => Linking.openURL('mailto:desenvolvetech.contato@gmail.com?subject=Reportar bug do APP SERVO&body=Favor, detalhar bug encontrado.`\n`Adicione fotos se possível.`\n`Agradecemos a ajuda!!') }>
+      <TouchableOpacity onPress={() => Linking.openURL('mailto:desenvolvetech.contato@gmail.com?subject=Contato sobre app Localize') }>
         <View style={{
           flexDirection: 'row',
           alignItems: 'center',
@@ -306,7 +363,7 @@ function App() {
             }}
             title="Desenvolvedor"
           >
-            Reportar bug
+            Contate nos
           </Title>
         </View>
       </TouchableOpacity>
@@ -371,6 +428,7 @@ function App() {
         <Drawer.Screen name="ServicoDetalhes" component={ServicoDetalhes}/>
         <Drawer.Screen name="ServicoCadastro" component={ServicoCadastro}/>
         <Drawer.Screen name="Login" component={Login}/>
+        <Drawer.Screen name="Login2" component={Login2}/>
         <Drawer.Screen name="Perfil" component={Perfil}/>
         <Drawer.Screen name="CartaoCadastro" component={CartaoCadastro}/>
         <Drawer.Screen name="VagaEmpregoCadastro" component={VagaEmpregoCadastro}/>

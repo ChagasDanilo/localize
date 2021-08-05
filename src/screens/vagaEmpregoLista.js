@@ -129,7 +129,7 @@ const App = ({ navigation, route }) => {
             marginBottom: 0,
             borderRadius: 3,
             padding: 5,
-            borderColor: '#009750',
+            borderColor: '#345D7E',
             borderWidth: 1,
             borderEndWidth: 6,
             borderStartWidth: 6,
@@ -172,10 +172,10 @@ const App = ({ navigation, route }) => {
                   marginStart: 20,
                   marginEnd: 20,
                   borderWidth: 1,
-                  borderColor: '#009750'
+                  borderColor: '#345D7E'
               }}
               labelStyle={{
-                color: '#009750'
+                color: '#345D7E'
               }}
               onPress={() => refresh()}
             >

@@ -9,7 +9,8 @@ import {
 } from 'react-native';
 import Constants from 'expo-constants';
 import { Title, Subheading, Surface, Appbar, Button} from 'react-native-paper';
-import { AirbnbRating } from 'react-native-ratings';
+
+import api from '../services/api';
 
 const Menu = ({ navigation }) => {
   

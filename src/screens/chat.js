@@ -3,12 +3,12 @@ import {
   View,
   ScrollView,
   Dimensions,
+  FlatList,
 } from 'react-native';
 import Constants from 'expo-constants';
 import { Appbar, Headline, Subheading, Title, Button, TextInput, IconButton } from 'react-native-paper';
 
-// import api from '../services/api';
-// import Styles from './utils/style';
+import api from '../services/api';
 
 const Menu = ({ navigation }) => {
 
@@ -28,8 +28,46 @@ const Menu = ({ navigation }) => {
     };
   });
 
+  async function handleSubmit (){
+    try {
+      const data = {                    
+        mensagem : mensagem,
+        user_id_destinatario: 1,//route.params.user_id,
+      }
+
+        const response = await api.post('/chatStore', data);
+        buscaMensagens()
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async function buscaMensagens(){
+    try{
+      const response = await api.get('/chatIndex?cod='+9);
+      console.log(response.data);
+      setLista(response.data);
+    }catch(err){
+      console.log(err);
+    }
+  }
+
+  useEffect(()=>{
+    const handelGetData  = async () =>{
+      try{
+        const response = await api.get('/chatIndex?cod='+9);
+        console.log(response.data);
+        setLista(response.data);
+      }catch(err){
+        console.log(err);
+      }
+    }
+    handelGetData();
+  },[])
+
+  const [lista , setLista ] = useState([]);
   const [mensagem, setMensagem] = useState('');
-  
+
   return(
   <View style={{
     flex: 1,
@@ -52,44 +90,52 @@ const Menu = ({ navigation }) => {
       <Appbar.BackAction color={'#345D7E'} onPress={() => navigation.goBack()} />
       <Appbar.Content title={<Title style={{color: '#345D7E', fontWeight: 'bold'}}>Chat</Title>} />
     </Appbar.Header>
-  <ScrollView>
-    <Subheading style={{
-        backgroundColor: 'transparent',
-        textAlignVertical: 'center',
-        textAlign: 'justify',
-        justifyContent: 'center',
-        color: '#345D7E',
-        margin: 10,
-        width: dimensions.window.width / 1.4,
-        paddingEnd: 10,
-        paddingStart: 10,
-        borderWidth: 1,
-        borderColor: '#345D7E',
-        borderRadius: 10,
-        marginTop: 10,
-    }}>
-        lero lero lero
-    </Subheading>
-    <Subheading style={{
-        backgroundColor: 'transparent',
-        textAlignVertical: 'center',
-        textAlign: 'justify',
-        justifyContent: 'center',
-        color: '#F27281',
-        margin: 10,
-        width: dimensions.window.width / 1.4,
-        paddingEnd: 10,
-        paddingStart: 10,
-        borderWidth: 1,
-        borderColor: '#F27281',
-        borderRadius: 10,
-        alignSelf: 'flex-end',
-        marginTop: 10,
-    }}>
-        lero lero lero lero
-    </Subheading>
+    <FlatList
+      data={lista}
+      // style={{height: 100}}
+      renderItem={({item}) =>
+      <View>
+        <Subheading style={{
+          backgroundColor: 'transparent',
+          textAlignVertical: 'center',
+          textAlign: 'justify',
+          justifyContent: 'center',
+          color: '#345D7E',
+          margin: 10,
+          width: dimensions.window.width / 1.4,
+          paddingEnd: 10,
+          paddingStart: 10,
+          borderWidth: 1,
+          borderColor: '#345D7E',
+          borderRadius: 10,
+          marginTop: 10,
+        }}>
+          {item.mensagem}
+        </Subheading>
 
-  </ScrollView>
+        <Subheading style={{
+          backgroundColor: 'transparent',
+          textAlignVertical: 'center',
+          textAlign: 'justify',
+          justifyContent: 'center',
+          color: '#F27281',
+          margin: 10,
+          width: dimensions.window.width / 1.4,
+          paddingEnd: 10,
+          paddingStart: 10,
+          borderWidth: 1,
+          borderColor: '#F27281',
+          borderRadius: 10,
+          alignSelf: 'flex-end',
+          marginTop: 10,
+        }}>
+          {item.mensagem}
+        </Subheading>
+      </View>
+    }
+      keyExtractor={item => item.id.toString()} 
+      numColumns={1}
+  />
 
   <View
     style={{
@@ -128,7 +174,7 @@ const Menu = ({ navigation }) => {
         color={'#345D7E'}
         size={35}
         disabled={!mensagem}
-        onPress={() => console.log('Pressed')}
+        onPress={() => handleSubmit()}
         style={{
             justifyContent: 'center',
             alignSelf: 'center',

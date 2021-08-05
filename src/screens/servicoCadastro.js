@@ -20,14 +20,6 @@ import { Button,
 } from 'react-native-paper';
 import {Picker} from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
-import { SliderBox } from "react-native-image-slider-box";
-import Slideshow from 'react-native-image-slider-show';
-import Gallery from 'react-native-image-gallery';
-
-import * as ImageManipulator from 'expo-image-manipulator';
-import {ImageBrowser} from 'expo-image-picker-multiple';
-import { AssetsSelector } from 'expo-images-picker'
-import { Ionicons } from '@expo/vector-icons'
 
 import api from '../services/api';
 
@@ -177,7 +169,6 @@ const app = ({ navigation, route }) => {
                 data.append('valor', RemoveCaracteresEspec(valor));
                 data.append('unidade_medida', unidade_medida);
                 data.append('palavra_chave', palavra_chave);
-                console.log(imagens);
                 data.append('imagens_path', imagens);
                 imagens.forEach((item, i) => {
                     data.append("imagens[]", item);
@@ -185,8 +176,8 @@ const app = ({ navigation, route }) => {
                   
                 const response = await api.post('/servicoStore', data);
                 setCarregando(false);
-                // Alert.alert('Sucesso','Serviço cadastrado com sucesso!')
-                // navigation.goBack();
+                Alert.alert('Sucesso','Serviço cadastrado com sucesso!')
+                navigation.goBack();
             } catch (error) {
                 setCarregando(false);
                 Alert.alert('Alerta','Não foi possível finalizar o cadastro. Verifique os dados e tente novamente. ' + error)
@@ -196,7 +187,7 @@ const app = ({ navigation, route }) => {
             Alert.alert('Alerta', 'Há campo obrigatório não informado!');            
         }
     }
-      
+
     return (        
         <KeyboardAvoidingView behavior="height" enabled>
             <Appbar.Header
@@ -215,7 +206,7 @@ const app = ({ navigation, route }) => {
             <FlatList
                 data={imagens}
                 extraData={imageAlterou}
-                style={{height: dimensions.window.height / 3, marginTop: 10}}
+                style={{height: imagens.length > 0 ? dimensions.window.height / 3 : 0, marginTop: 10}}
                 horizontal={true}
                 renderItem={({item}) =>
                   <View style={{
@@ -336,11 +327,12 @@ const app = ({ navigation, route }) => {
                 </HelperText>
                 <TextInput
                     label= {'Descrição do Serviço'}
-                    placeholder={'Pintura residencial'}
+                    placeholder={'Pintura residencial...'}
                     autoCapitalize='sentences'
                     autoCorrect={true}
                     onChangeText={text => setDetalhes(text)}
                     value={detalhes}
+                    multiline={true}
 
                     type="flat"
                     mode="outlined"
