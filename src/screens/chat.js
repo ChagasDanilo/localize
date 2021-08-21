@@ -32,7 +32,7 @@ const Menu = ({ navigation }) => {
     try {
       const data = {                    
         mensagem : mensagem,
-        user_id_destinatario: 1,//route.params.user_id,
+        user_id_destinatario: route.params.servico_user_id,
       }
 
         const response = await api.post('/chatStore', data);

@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   StatusBar,
   Dimensions,
+  Alert,
+  FlatList
 } from 'react-native';
 import Constants from 'expo-constants';
 import { Appbar, Headline, Subheading, Title, Button, } from 'react-native-paper';
@@ -15,12 +17,15 @@ import { AirbnbRating } from 'react-native-ratings';
 import api from '../services/api';
 // import Styles from './utils/style';
 
-const Menu = ({ navigation }) => {
+const Menu = ({ navigation, route }) => {
 
   const window = Dimensions.get("window");
   const screen = Dimensions.get("screen");
 
   const [dimensions, setDimensions] = useState({ window, screen });
+
+  const [lista, setLista] = useState([]);
+  const [listaImagem, setListaImagem] = useState([]);
 
   const onChange = ({ window, screen }) => {
     setDimensions({ window, screen });
@@ -33,13 +38,35 @@ const Menu = ({ navigation }) => {
     };
   });
 
-  async function temToken(){
+  useEffect(() => {
+    const handelGetData = async () => {
+      try {
+        const response = await api.get('/servicoIndex?cod=' + route.params.id_servico);
+
+        setLista(response.data);
+      } catch (err) {
+        Alert.alert('Sem conexão', 'Verifique sua conexão com a internet!')
+      }
+    }
+    const handelGeImage = async () => {
+      try {
+        const response = await api.get('/servicoImagemIndex?cod=' + route.params.id_servico);
+
+        setListaImagem(response.data);
+      } catch (err) {
+        Alert.alert('Erro', 'Não foi possível recuperar as imagens')
+      }
+    }
+    handelGetData();
+  }, [])
+
+  async function temToken() {
     try {
       const log = await AsyncStorage.getItem('@localize-token');
       if (log) {
         const response = await api.get('/loginCheck');
-        console.log(response.data);
-        if (response.data) {
+        console.log(response.data.id);
+        if (response.data.id > 0) {
           navigation.navigate('Chat')
           return true
         }
@@ -51,6 +78,14 @@ const Menu = ({ navigation }) => {
     } catch (err) {
       console.log(err);
       return false
+    }
+  }
+
+  function retornaValor(valor) {
+    if (valor > 0) {
+      return 'R$ ' + valor
+    } else {
+      return 'Preço a combinar'
     }
   }
 
@@ -76,81 +111,113 @@ const Menu = ({ navigation }) => {
         <Appbar.BackAction color={'#345D7E'} onPress={() => navigation.goBack()} />
         <Appbar.Content title={<Title style={{ color: '#345D7E', fontWeight: 'bold' }}>Serviço</Title>} />
       </Appbar.Header>
-      <ScrollView>
+      <FlatList
+        data={lista}
+        // ListEmptyComponent={emptyRender}
+        // style={{height: 100}}
+        renderItem={({ item }) =>
 
-        <Image
-          style={{
-            width: "95%",
-            height: dimensions.window.height / 4,
-            resizeMode: "contain",
-            alignSelf: "center",
-            backgroundColor: '#f2f2f2',
-            marginTop: 10,
-            marginBottom: 10,
-          }}
-          source={require('../Images/icones_view/pintor.png')}
-        />
+          <View>
+            <Image
+              style={{
+                width: "95%",
+                height: dimensions.window.height / 4,
+                resizeMode: "contain",
+                alignSelf: "center",
+                backgroundColor: '#f2f2f2',
+                marginTop: 10,
+                marginBottom: 10,
+              }}
+              source={require('../Images/icones_view/pintor.png')}
+            />
 
-        <Headline style={{
-          backgroundColor: 'transparent',
-          textAlignVertical: 'center',
-          textAlign: 'center',
-          marginBottom: 10,
-          justifyContent: 'flex-start',
-          color: '#345D7E'
-        }}>
-          Pintor residencial
-        </Headline>
-        <Subheading style={{
-          backgroundColor: 'transparent',
-          textAlignVertical: 'center',
-          textAlign: 'justify',
-          justifyContent: 'center',
-          color: '#345D7E',
-          margin: 20,
-        }}>
-          Pintor profissional O Fabuloso Gerador de Lero-lero v2.0 é capaz de gerar qualquer quantidade de texto vazio e prolixo, ideal para engrossar uma tese de mestrado, impressionar seu chefe ou preparar discursos capazes de curar a insônia da platéia. Basta informar um título pomposo qualquer (nos moldes do que está sugerido aí embaixo) e a quantidade de frases desejada. Voilá! Em dois nano-segundos você terá um texto - ou mesmo um livro inteiro - pronto para impressão. Ou, se preferir, faça copy/paste para um editor de texto para formatá-lo mais sofisticadamente. Lembre-se: aparência é tudo, conteúdo é nada.
-        </Subheading>
-        <Subheading style={{
-          backgroundColor: 'transparent',
-          textAlignVertical: 'center',
-          textAlign: 'left',
-          justifyContent: 'center',
-          color: '#F27281',
-          margin: 20,
-        }}>
-          Valor a ser combinado de acordo com o serviço
-        </Subheading>
+            <FlatList
+              data={listaImagem}
+              // ListEmptyComponent={emptyRender}
+              // style={{height: 100}}
+              renderItem={({ item }) =>
 
-        <Button
-          //   icon="accept" 
-          mode="contained"
-          color='#fff'
-          // loading={carregando}
-          uppercase={false}
-          accessibilityLabel="Recarregar"
-          contentStyle={{
-            height: 40,
-            justifyContent: 'center',
-            alignContent: 'stretch',
-            fontWeight: 'bold',
-          }}
-          style={{
-            marginTop: 20,
-            marginStart: 20,
-            marginEnd: 20,
-            borderWidth: 1,
-            borderColor: '#345D7E'
-          }}
-          labelStyle={{
-            color: '#345D7E'
-          }}
-          onPress={() => temToken()}
-        >
-          Contratar Serviços
-        </Button>
+                <Image
+                  style={{
+                    width: "95%",
+                    height: dimensions.window.height / 4,
+                    resizeMode: "contain",
+                    alignSelf: "center",
+                    backgroundColor: '#f2f2f2',
+                    marginTop: 10,
+                    marginBottom: 10,
+                  }}
+                  source={require('../Images/icones_view/pintor.png')}
+                />
 
-      </ScrollView>
+
+              }
+              keyExtractor={item => item.id.toString()}
+              numColumns={1}
+            />
+            <Headline style={{
+              backgroundColor: 'transparent',
+              textAlignVertical: 'center',
+              textAlign: 'center',
+              marginBottom: 10,
+              justifyContent: 'flex-start',
+              color: '#345D7E'
+            }}>
+              {item.descricao}
+            </Headline>
+            <Subheading style={{
+              backgroundColor: 'transparent',
+              textAlignVertical: 'center',
+              textAlign: 'justify',
+              justifyContent: 'center',
+              color: '#345D7E',
+              margin: 20,
+            }}>
+              {item.detalhes}
+            </Subheading>
+            <Subheading style={{
+              backgroundColor: 'transparent',
+              textAlignVertical: 'center',
+              textAlign: 'left',
+              justifyContent: 'center',
+              color: '#F27281',
+              margin: 20,
+            }}>
+              {retornaValor(item.valor)}
+            </Subheading>
+
+            <Button
+              //   icon="accept" 
+              mode="contained"
+              color='#fff'
+              // loading={carregando}
+              uppercase={false}
+              accessibilityLabel="Recarregar"
+              contentStyle={{
+                height: 40,
+                justifyContent: 'center',
+                alignContent: 'stretch',
+                fontWeight: 'bold',
+              }}
+              style={{
+                marginTop: 20,
+                marginStart: 20,
+                marginEnd: 20,
+                borderWidth: 1,
+                borderColor: '#345D7E'
+              }}
+              labelStyle={{
+                color: '#345D7E'
+              }}
+              onPress={() => temToken()}
+            >
+              Contratar Serviços
+            </Button>
+          </View>
+        }
+        keyExtractor={item => item.id.toString()}
+        numColumns={1}
+      />
     </View>
   )
 };

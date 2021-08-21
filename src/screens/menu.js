@@ -8,14 +8,15 @@ import {
   Dimensions,
   FlatList,
 } from 'react-native';
-import { Title,
-    Subheading,
-    Text,
-    Searchbar,
-    Appbar,
-    Headline,
-    Button,
-    Surface
+import {
+  Title,
+  Subheading,
+  Text,
+  Searchbar,
+  Appbar,
+  Headline,
+  Button,
+  Surface
 } from 'react-native-paper';
 import ShimmerPlaceHolder from 'react-native-shimmer-placeholder';
 import Constants from 'expo-constants';
@@ -25,7 +26,7 @@ import { DrawerActions } from '@react-navigation/native';
 import api from '../services/api';
 
 const Menu = ({ navigation }) => {
-  
+
   const window = Dimensions.get("window");
   const screen = Dimensions.get("screen");
 
@@ -42,7 +43,7 @@ const Menu = ({ navigation }) => {
     };
   });
 
-  const [lista , setLista ] = useState([]);
+  const [lista, setLista] = useState([]);
   const [pesquisa, setPesquisa] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
@@ -51,35 +52,80 @@ const Menu = ({ navigation }) => {
 
   const [exibeBarraPesquisa, setExibeBarraPesquisa] = useState(false);
 
-  useEffect(()=>{
-    const handelGetData  = async () =>{
-      try{
+  useEffect(() => {
+    const handelGetData = async () => {
+      setPesquisa('')
+      try {
         const response = await api.get('/servicoShow');
 
         setLista(response.data);
-        if(response.data.length <= 0){
+        if (response.data.length <= 0) {
           setTitulo('Ops')
           setMensagem('Nenhum registro encontrado')
         }
-      }catch(err){
+      } catch (err) {
         setTitulo('Sem conexão')
         setMensagem('Verifique sua conexão com a internet')
       }
     }
     handelGetData();
-  },[])
+  }, [])
 
-  function retornaValor(valor){
-    if(valor > 0){
+  function retornaValor(valor) {
+    if (valor > 0) {
       return 'R$ ' + valor
-    }else{
+    } else {
       return 'Preço a combinar'
     }
   }
 
+  async function refresh() {
+    if (pesquisa != '') {
+      consultar();
+    } else {
+      setRefreshing(true);
+      try {
+        const response = await api.get('/servicoShow');
+
+        setLista(response.data);
+        if (response.data.length <= 0) {
+          setTitulo('Ops')
+          setMensagem('Nenhum registro encontrado')
+        }
+      } catch (err) {
+        setTitulo('Sem conexão')
+        setMensagem('Verifique sua conexão com a internet')
+      }
+      setTimeout(() => {
+        setRefreshing(false)
+      }, 1000);
+    }
+    setRefreshing(false)
+  }
+
+  async function consultar() {
+    setRefreshing(true);
+    try {
+      const response = await api.get('/servicoLike?texto=' + pesquisa);
+
+      setLista(response.data);
+      if (response.data.length <= 0) {
+        setTitulo('Ops')
+        setMensagem('Nenhum registro encontrado')
+      }
+    } catch (err) {
+      setTitulo('Sem conexão')
+      setMensagem('Verifique sua conexão com a internet')
+    }
+    setTimeout(() => {
+      setRefreshing(false)
+    }, 1000);
+    setRefreshing(false)
+  }
+
   // const alturaStatusBar = Platform.OS == 'IOS' ? Constants.statusBarHeight : 0;
 
-  const emptyRender = () => (      
+  const emptyRender = () => (
     <View
       style={{
         backgroundColor: 'transparent',
@@ -94,199 +140,204 @@ const Menu = ({ navigation }) => {
         borderStartWidth: 6,
       }}
     >
-        <Subheading style={{
-            backgroundColor: 'transparent',
-            textAlignVertical: 'center',
-            justifyContent: 'center',
-            textAlign: 'center',
-            fontWeight: 'bold',
-        }}>
-          {titulo}
-        </Subheading>
-        <Headline style={{
-            alignSelf: 'center',
-            textAlign: 'center',
-            backgroundColor: 'transparent',
-            fontWeight: 'bold',
-            paddingStart: 10,
-            marginTop : 5,
-        }}>
-            {mensagem}
-        </Headline>
-        <Button 
-          icon="reload" 
-          mode="contained"
-          color='#fff'
-          // loading={carregando}
-          uppercase={false}
-          accessibilityLabel="Recarregar"
-          contentStyle={{
-              height: 40,
-              justifyContent: 'center',
-              alignContent: 'stretch',
-              fontWeight: 'bold',
-          }}
-          style={{
-              marginTop: 5,
-              marginStart: 20,
-              marginEnd: 20,
-              borderWidth: 1,
-              borderColor: '#345D7E'
-          }}
-          labelStyle={{
-            color: '#345D7E'
-          }}
-          onPress={() => refresh()}
-        >
-          Recarregar
-        </Button>
-        <View style={{
-          paddingBottom: 8,
-        }}/>
+      <Subheading style={{
+        backgroundColor: 'transparent',
+        textAlignVertical: 'center',
+        justifyContent: 'center',
+        textAlign: 'center',
+        fontWeight: 'bold',
+      }}>
+        {titulo}
+      </Subheading>
+      <Headline style={{
+        alignSelf: 'center',
+        textAlign: 'center',
+        backgroundColor: 'transparent',
+        fontWeight: 'bold',
+        paddingStart: 10,
+        marginTop: 5,
+      }}>
+        {mensagem}
+      </Headline>
+      <Button
+        icon="reload"
+        mode="contained"
+        color='#fff'
+        // loading={carregando}
+        uppercase={false}
+        accessibilityLabel="Recarregar"
+        contentStyle={{
+          height: 40,
+          justifyContent: 'center',
+          alignContent: 'stretch',
+          fontWeight: 'bold',
+        }}
+        style={{
+          marginTop: 5,
+          marginStart: 20,
+          marginEnd: 20,
+          borderWidth: 1,
+          borderColor: '#345D7E'
+        }}
+        labelStyle={{
+          color: '#345D7E'
+        }}
+        onPress={() => refresh()}
+      >
+        Recarregar
+      </Button>
+      <View style={{
+        paddingBottom: 8,
+      }} />
     </View>
   );
 
-  return(
-  <View style={{
-    flex: 1,
-    fontSize: Constants.systemFonts.size,
-    fontStyle: Constants.systemFonts.style,
-    justifyContent: 'flex-start',
-    alignItems: 'stretch',
-    backgroundColor: '#f2f2f2',
-    // borderBottomWidth: 20,
-    borderColor: '#333'
-  }}>
-  <Appbar.Header
-  // statusBarHeight={Constants.statusBarHeight}
-  style={{
-    backgroundColor: '#fff',
-    elevation: 0,
-    shadowOpacity: 0,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#345D7E',
-  }}>
-    <Appbar.Action icon="menu" color={'#345D7E'} onPress={() => navigation.dispatch(DrawerActions.openDrawer())} />
-    <Appbar.Content title={<Title style={{color: '#345D7E', fontWeight: 'bold'}}>Localize</Title>} />
-    <Appbar.Action icon={exibeBarraPesquisa ? require('../Images/icones_view/search-cancel.png') : require('../Images/icones_view/search.png')} color={'#345D7E'} onPress={() => setExibeBarraPesquisa(!exibeBarraPesquisa)} />
-  </Appbar.Header>
-  <StatusBar barStyle="default" />
-
-  {exibeBarraPesquisa ?
-  <Searchbar
-    placeholder="Pesquise por palavras chaves"
-    value={pesquisa}
-    autoCorrect={false}
-    onChangeText={text => setPesquisa(text)}
-    onSubmitEditing={() => refresh()}
-    onIconPress={() => refresh()}
-    style={{
-        width: (Dimensions.get("window").width - 20),
-        alignSelf:'center',
-        marginTop: 10,
-    }}
-  />
-  : null }
-  <FlatList
-      data={lista}
-      ListEmptyComponent={emptyRender}
-      // style={{height: 100}}
-      renderItem={({item}) =>
-      <TouchableOpacity
-        onPress={() => navigation.navigate('ServicoDetalhes')}
-      >
-        <Surface style={{
-          width: dimensions.window.width - 20,
-          margin: 10,
-          marginTop: 15,
-          backgroundColor: "#fff",
-          borderRadius: 5,
-          //ios    
-          shadowOpacity: 0.3,
-          shadowRadius: 3,
-          shadowOffset: {
-              height: 0,
-              width: 0
-          },
-          //Android
-          elevation: 10,
+  return (
+    <View style={{
+      flex: 1,
+      fontSize: Constants.systemFonts.size,
+      fontStyle: Constants.systemFonts.style,
+      justifyContent: 'flex-start',
+      alignItems: 'stretch',
+      backgroundColor: '#f2f2f2',
+      // borderBottomWidth: 20,
+      borderColor: '#333'
+    }}>
+      <Appbar.Header
+        // statusBarHeight={Constants.statusBarHeight}
+        style={{
+          backgroundColor: '#fff',
+          elevation: 0,
+          shadowOpacity: 0,
+          borderBottomWidth: 0.5,
+          borderBottomColor: '#345D7E',
         }}>
-          <View
-            style={{
-              flexDirection: 'row',
-            }}
+        <Appbar.Action icon="menu" color={'#345D7E'} onPress={() => navigation.dispatch(DrawerActions.openDrawer())} />
+        <Appbar.Content title={<Title style={{ color: '#345D7E', fontWeight: 'bold' }}>Localize</Title>} />
+        <Appbar.Action icon={exibeBarraPesquisa ? require('../Images/icones_view/search-cancel.png') : require('../Images/icones_view/search.png')} color={'#345D7E'} onPress={() => setExibeBarraPesquisa(!exibeBarraPesquisa)} />
+      </Appbar.Header>
+      <StatusBar barStyle="default" />
+
+      {exibeBarraPesquisa ?
+        <Searchbar
+          placeholder="Pesquise por palavras chaves"
+          value={pesquisa}
+          autoCorrect={false}
+          onChangeText={text => setPesquisa(text)}
+          onSubmitEditing={() => refresh()}
+          onIconPress={() => refresh()}
+          style={{
+            width: (Dimensions.get("window").width - 20),
+            alignSelf: 'center',
+            marginTop: 10,
+          }}
+        />
+        : null}
+      <FlatList
+        data={lista}
+        ListEmptyComponent={emptyRender}
+        // style={{height: 100}}
+        renderItem={({ item }) =>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('ServicoDetalhes', {
+              id_servico: item.id,
+              servico_user_id: item.user_id
+            })}
           >
-            <Image 
-              style={{
-                width: "30%",
-                height: dimensions.window.height / 6,
-                margin: 10,
-                resizeMode: "contain",
-                alignSelf: "flex-start",
-                backgroundColor: '#f2f2f2'
-              }}
-              source={require('../Images/icones_view/pintor.png')}
-            />
-            <View
-              style={{
-                flexDirection: 'column',
-                justifyContent: 'space-evenly',
-                // alignContent: 'space-between',
-                height: '100%'
-              }}
-            >
-              <Title style={{
-                backgroundColor: 'transparent',
-                textAlignVertical: 'center',
-                textAlign: 'left',
-                margin: 10,
-                justifyContent: 'flex-start',
-                color: '#345D7E'
-              }}>
-                {item.descricao}
-              </Title>
-              <Subheading style={{
-                backgroundColor: 'transparent',
-                textAlignVertical: 'center',
-                textAlign: 'left',
-                margin: 10,
-                justifyContent: 'flex-start',
-                color: '#F8B195'
-              }}>
-                {retornaValor(item.valor)}
-              </Subheading>
-              {item.estrelas > 0 ?
-              <AirbnbRating
-                count={5}
-                reviews={["Horrível", "Ruim", "Neutro", "Bom", "Ótimo"]}
-                defaultRating={item.estrelas}
-                size={20}
-                selectedColor={'#F27281'}
-                reviewColor={'#F27281'}
-                reviewSize={0}
-                isDisabled={true}
-              />
-              :
-              <Subheading style={{
-                backgroundColor: 'transparent',
-                textAlignVertical: 'center',
-                textAlign: 'left',
-                justifyContent: 'flex-start',
-                color: '#F27281',
-                margin: 10,
-              }}>
-                Sem classificação
-              </Subheading>
-              }
-            </View>
-          </View>
-        </Surface>
-      </TouchableOpacity>
-    }
-      keyExtractor={item => item.id.toString()} 
-      numColumns={1}
-  />
-  </View>
-)};
+            <Surface style={{
+              width: dimensions.window.width - 20,
+              margin: 10,
+              marginTop: 15,
+              backgroundColor: "#fff",
+              borderRadius: 5,
+              //ios    
+              shadowOpacity: 0.3,
+              shadowRadius: 3,
+              shadowOffset: {
+                height: 0,
+                width: 0
+              },
+              //Android
+              elevation: 10,
+            }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                }}
+              >
+                <Image
+                  style={{
+                    width: "30%",
+                    height: dimensions.window.height / 6,
+                    margin: 10,
+                    resizeMode: "contain",
+                    alignSelf: "flex-start",
+                    backgroundColor: '#f2f2f2'
+                  }}
+                  source={{uri: 'http://192.168.1.31:8080/servicoImagemIndexFirst?cod='+item.id}}
+                  // source={require('../Images/icones_view/pintor.png')}
+                />
+                <View
+                  style={{
+                    flexDirection: 'column',
+                    justifyContent: 'space-evenly',
+                    // alignContent: 'space-between',
+                    height: '100%'
+                  }}
+                >
+                  <Title style={{
+                    backgroundColor: 'transparent',
+                    textAlignVertical: 'center',
+                    textAlign: 'left',
+                    margin: 10,
+                    justifyContent: 'flex-start',
+                    color: '#345D7E'
+                  }}>
+                    {item.descricao}
+                  </Title>
+                  <Subheading style={{
+                    backgroundColor: 'transparent',
+                    textAlignVertical: 'center',
+                    textAlign: 'left',
+                    margin: 10,
+                    justifyContent: 'flex-start',
+                    color: '#F8B195'
+                  }}>
+                    {retornaValor(item.valor)}
+                  </Subheading>
+                  {item.estrelas > 0 ?
+                    <AirbnbRating
+                      count={5}
+                      reviews={["Horrível", "Ruim", "Neutro", "Bom", "Ótimo"]}
+                      defaultRating={item.estrelas}
+                      size={20}
+                      selectedColor={'#F27281'}
+                      reviewColor={'#F27281'}
+                      reviewSize={0}
+                      isDisabled={true}
+                    />
+                    :
+                    <Subheading style={{
+                      backgroundColor: 'transparent',
+                      textAlignVertical: 'center',
+                      textAlign: 'left',
+                      justifyContent: 'flex-start',
+                      color: '#F27281',
+                      margin: 10,
+                    }}>
+                      Sem classificação
+                    </Subheading>
+                  }
+                </View>
+              </View>
+            </Surface>
+          </TouchableOpacity>
+        }
+        keyExtractor={item => item.id.toString()}
+        numColumns={1}
+      />
+    </View>
+  )
+};
 
 export default Menu;
